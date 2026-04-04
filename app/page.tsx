@@ -45,7 +45,7 @@ interface Message {
 const DSA_PATTERNS = [
   {
     category: "Arrays & Hashing",
-    problems: ["Two Sum", "Contains Duplicate", "Valid Anagram", "Group Anagrams", "Top K Frequent Elements", "Product of Array Except Self", "Longest Consecutive Sequence"]
+    problems: ["Two Sum", "Contains Duplicate", "Valid Anagram", "Group Anagrams", "Top K Frequent Elements", "Product of Array Except Self", "Longest Consecutive Sequence", "Decode the Slanted Ciphertext"]
   },
   {
     category: "Two Pointers",
@@ -77,20 +77,54 @@ const DSA_PATTERNS = [
   }
 ];
 
+const PROBLEM_INFO: Record<string, { params: string[], example?: string }> = {
+  "Two Sum": { params: ["nums", "target"], example: "nums = [2,7,11,15], target = 9 -> [0,1]" },
+  "Contains Duplicate": { params: ["nums"], example: "nums = [1,2,3,1] -> true" },
+  "Valid Anagram": { params: ["s", "t"], example: "s = \"anagram\", t = \"nagaram\" -> true" },
+  "Group Anagrams": { params: ["strs"], example: "strs = [\"eat\",\"tea\",\"tan\",\"ate\",\"nat\",\"bat\"] -> [[\"bat\"],[\"nat\",\"tan\"],[\"ate\",\"eat\",\"tea\"]]" },
+  "Top K Frequent Elements": { params: ["nums", "k"], example: "nums = [1,1,1,2,2,3], k = 2 -> [1,2]" },
+  "Product of Array Except Self": { params: ["nums"], example: "nums = [1,2,3,4] -> [24,12,8,6]" },
+  "Longest Consecutive Sequence": { params: ["nums"], example: "nums = [100,4,200,1,3,2] -> 4" },
+  "Decode the Slanted Ciphertext": { params: ["encodedText", "rows"], example: "encodedText = \"coding\", rows = 1 -> \"coding\"" },
+  "Valid Palindrome": { params: ["s"], example: "s = \"A man, a plan, a canal: Panama\" -> true" },
+  "3Sum": { params: ["nums"], example: "nums = [-1,0,1,2,-1,-4] -> [[-1,-1,2],[-1,0,1]]" },
+  "Container With Most Water": { params: ["height"], example: "height = [1,8,6,2,5,4,8,3,7] -> 49" },
+  "Best Time to Buy & Sell Stock": { params: ["prices"], example: "prices = [7,1,5,3,6,4] -> 5" },
+  "Longest Substring Without Repeating": { params: ["s"], example: "s = \"abcabcbb\" -> 3" },
+  "Valid Parentheses": { params: ["s"], example: "s = \"()[]{}\" -> true" },
+  "Find Minimum in Rotated Sorted Array": { params: ["nums"], example: "nums = [3,4,5,1,2] -> 1" },
+  "Reverse Linked List": { params: ["head"], example: "head = [1,2,3,4,5] -> [5,4,3,2,1]" },
+  "Merge Two Sorted Lists": { params: ["list1", "list2"], example: "list1 = [1,2,4], list2 = [1,3,4] -> [1,1,2,3,4,4]" },
+  "Linked List Cycle": { params: ["head"], example: "head = [3,2,0,-4], pos = 1 -> true" },
+  "Invert Binary Tree": { params: ["root"], example: "root = [4,2,7,1,3,6,9] -> [4,7,2,9,6,3,1]" },
+  "Maximum Depth of Binary Tree": { params: ["root"], example: "root = [3,9,20,null,null,15,7] -> 3" },
+  "Climbing Stairs": { params: ["n"], example: "n = 2 -> 2" },
+  "House Robber": { params: ["nums"], example: "nums = [1,2,3,1] -> 4" },
+};
+
 const getStarterCode = (problem: string, lang: string) => {
+  const info = PROBLEM_INFO[problem] || { params: ["nums"] };
   const safeName = problem.replace(/[^a-zA-Z0-9]/g, '');
   const camelCase = safeName.charAt(0).toLowerCase() + safeName.slice(1);
   const snake_case = safeName.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`).replace(/^_/, '');
+  
+  const jsParams = info.params.join(', ');
+  const pyParams = info.params.join(', ');
+  const javaParams = info.params.map(p => `Object ${p}`).join(', ');
+  const cppParams = info.params.map(p => `auto ${p}`).join(', ');
+
+  const exampleComment = info.example ? `\n * Example: ${info.example}` : '';
+  const pyExampleComment = info.example ? `\n        # Example: ${info.example}` : '';
 
   switch (lang) {
     case 'python':
-      return `class Solution:\n    def ${snake_case}(self, nums):\n        # Write your code here\n        pass`;
+      return `class Solution:\n    def ${snake_case}(self, ${pyParams}):${pyExampleComment}\n        # Write your code here\n        pass`;
     case 'javascript':
-      return `/**\n * Problem: ${problem}\n */\nvar ${camelCase} = function(nums) {\n    // Write your code here\n};`;
+      return `/**\n * Problem: ${problem}${exampleComment}\n */\nvar ${camelCase} = function(${jsParams}) {\n    // Write your code here\n};`;
     case 'java':
-      return `class Solution {\n    public void ${camelCase}() {\n        // Write your code here\n    }\n}`;
+      return `class Solution {\n    public Object ${camelCase}(${javaParams}) {\n        // Write your code here\n        return null;\n    }\n}`;
     case 'cpp':
-      return `class Solution {\npublic:\n    void ${camelCase}() {\n        // Write your code here\n    }\n};`;
+      return `class Solution {\npublic:\n    auto ${camelCase}(${cppParams}) {\n        // Write your code here\n    }\n};`;
     default:
       return '// Write your code here';
   }
@@ -234,8 +268,19 @@ export default function DSATeacher() {
         })),
         config: {
           systemInstruction: `You are "DSA Sensei", an expert Data Structures and Algorithms teacher with a personality inspired by wise manga mentors. 
-          Your style is encouraging, slightly dramatic, and highly visual.
+          Your style is compact, to the point, and highly visual.
           Use Markdown for formatting. 
+          
+          TEACHING PHILOSOPHY (LeetCode Teacher):
+          - Guide the student with Socratic questioning.
+          - Provide hints first, then logic, then code only if necessary.
+          - Focus on time and space complexity.
+          - Be concise. No fluff.
+          
+          VISUAL PRESENTATION (RevealJS/Canvas Design):
+          - Use structured sections.
+          - Think of your explanations as slides or canvas layers.
+          - Use diagrams to visualize data structures.
           
           CRITICAL CONTEXT:
           The student is currently working on the problem: "${selectedProblem}".
@@ -258,7 +303,7 @@ export default function DSATeacher() {
           When explaining code, provide clean, optimized solutions.
           Incorporate "sketchy" descriptions or ASCII art diagrams where helpful.
           Keep your tone like a teacher who loves sketching on a whiteboard.
-          Use emojis like 🖋️, 📜, 💡, ⚔️, 🧠.`,
+          Use emojis like 🖋️, 📜, 💡, 🧠.`,
         }
       });
 
@@ -370,11 +415,14 @@ export default function DSATeacher() {
                 padding: { top: 16, bottom: 16 },
                 scrollBeyondLastLine: false,
                 smoothScrolling: true,
-                cursorBlinking: "smooth",
+                cursorBlinking: "solid",
+                cursorStyle: "underline",
                 cursorSmoothCaretAnimation: "on",
                 formatOnPaste: true,
                 overviewRulerLanes: 0,
                 hideCursorInOverviewRuler: true,
+                fastScrollSensitivity: 5,
+                mouseWheelZoom: true,
                 scrollbar: {
                   vertical: 'hidden',
                   horizontal: 'hidden'
