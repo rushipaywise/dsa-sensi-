@@ -4,9 +4,11 @@ import React, { useState, useRef, useEffect } from 'react';
 import { GoogleGenAI, Type } from "@google/genai";
 import ReactMarkdown from 'react-markdown';
 import { motion, AnimatePresence } from 'motion/react';
-import { Send, User, Bot, BookOpen, PenTool, Trash2, Play, Code2, MessageSquare } from 'lucide-react';
+import { Send, User, Bot, BookOpen, PenTool, Trash2, Play, Code2, MessageSquare, GripVertical } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from 'react-resizable-panels';
+import Editor from '@monaco-editor/react';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -191,6 +193,15 @@ export default function DSATeacher() {
     }
   };
 
+  const getAsciiFace = () => {
+    switch (mood) {
+      case 'happy': return '( ˘ ▽ ˘ )';
+      case 'thinking': return '( ಠ ʖ̯ ಠ )';
+      case 'serious': return '( ಠ_ಠ )';
+      default: return '(⌐■_■)';
+    }
+  };
+
   const handleCodeChange = (newCode: string) => {
     setCodeMap(prev => ({ ...prev, [`${selectedProblem}-${language}`]: newCode }));
   };
@@ -272,9 +283,10 @@ export default function DSATeacher() {
       };
       setMessages(prev => [...prev, assistantMessage]);
       setMood(content.length > 200 ? 'serious' : 'happy');
-    } catch (error) {
+    } catch (error: any) {
       console.error("Gemini Error:", error);
-      setMessages(prev => [...prev, { role: 'assistant', content: "Gomen! Something went wrong in my meditation. Let's try again." }]);
+      const errorMessage = error?.message || "An unknown error occurred.";
+      setMessages(prev => [...prev, { role: 'assistant', content: `Gomen! Something went wrong in my meditation.\n\n**Error details:**\n\`\`\`\n${errorMessage}\n\`\`\`\n\nLet's try again.` }]);
       setMood('neutral');
     } finally {
       setIsLoading(false);
@@ -289,169 +301,197 @@ export default function DSATeacher() {
   };
 
   return (
-    <div className="h-screen w-full bg-[#fdfcf0] flex overflow-hidden font-sans text-black">
-      
-      {/* LEFT SIDEBAR: Problem List */}
-      <aside className="w-64 border-r-4 border-black bg-white flex flex-col shrink-0 z-10 hidden md:flex">
-        <div className="p-4 border-b-4 border-black bg-yellow-50 flex items-center gap-2">
-          <BookOpen size={24} />
-          <h2 className="text-xl font-black uppercase italic tracking-tighter">Scrolls</h2>
-        </div>
-        <div className="flex-1 overflow-y-auto p-2 space-y-4">
-          {DSA_PATTERNS.map((pattern, i) => (
-            <div key={i} className="space-y-1">
-              <div className="text-[10px] font-black uppercase bg-zinc-100 p-1 border-2 border-black">{pattern.category}</div>
-              {pattern.problems.map((prob, j) => (
-                <div 
-                  key={j} 
-                  onClick={() => handleProblemSelect(prob)}
-                  className={cn(
-                    "p-2 border-2 border-black manga-panel cursor-pointer flex items-center gap-2 ml-2 text-xs transition-colors",
-                    selectedProblem === prob ? "bg-yellow-200" : "hover:bg-zinc-50 bg-white"
-                  )}
-                >
-                  <span className="font-bold truncate">{prob}</span>
-                </div>
-              ))}
-            </div>
-          ))}
-        </div>
-      </aside>
-
-      {/* CENTER: Code Editor */}
-      <main className="flex-1 flex flex-col min-w-0 bg-zinc-50 relative">
-        <header className="h-14 border-b-4 border-black bg-white flex items-center justify-between px-4 shrink-0">
-          <div className="flex items-center gap-2">
-            <Code2 size={20} />
-            <div className="font-black italic text-lg truncate">{selectedProblem}</div>
-          </div>
-          <div className="flex items-center gap-2">
-            <select 
-              value={language} 
-              onChange={(e) => setLanguage(e.target.value)}
-              className="border-2 border-black rounded px-2 py-1 text-xs font-bold uppercase bg-zinc-100 outline-none cursor-pointer hover:bg-zinc-200"
-            >
-              <option value="javascript">JavaScript</option>
-              <option value="python">Python</option>
-              <option value="java">Java</option>
-              <option value="cpp">C++</option>
-            </select>
-          </div>
-        </header>
-        <div className="flex-1 relative flex overflow-hidden">
-          {/* Line numbers */}
-          <div className="w-12 bg-zinc-100 border-r-2 border-black flex flex-col items-center py-4 text-zinc-400 select-none font-mono text-sm overflow-hidden shrink-0">
-            {currentCode.split('\n').map((_, i) => (
-              <div key={i} className="h-6 leading-6">{i + 1}</div>
-            ))}
-          </div>
-          <textarea
-            value={currentCode}
-            onChange={(e) => handleCodeChange(e.target.value)}
-            className="flex-1 p-4 bg-transparent focus:outline-none resize-none leading-6 whitespace-pre overflow-auto font-mono text-sm"
-            spellCheck={false}
-          />
-        </div>
-      </main>
-
-      {/* RIGHT SIDEBAR: Sensei Chat */}
-      <aside className="w-80 md:w-96 border-l-4 border-black bg-white flex flex-col shrink-0 z-10">
-        <div className="p-4 border-b-4 border-black bg-blue-50 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Bot size={24} />
-            <h2 className="text-xl font-black uppercase italic tracking-tighter">Sensei Chat</h2>
-          </div>
-          <button onClick={clearChat} className="p-1 hover:bg-blue-100 rounded-full transition-colors border-2 border-transparent hover:border-black" title="Clear Chat">
-            <Trash2 size={16} />
-          </button>
-        </div>
+    <div className="h-screen w-full bg-[#fdfcf0] overflow-hidden font-sans text-black relative">
+      <PanelGroup orientation="horizontal" className="h-full w-full">
         
-        <div className="flex-1 overflow-y-auto p-4 space-y-6" ref={scrollRef}>
-          <AnimatePresence initial={false}>
-            {messages.map((msg, idx) => (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className={cn(
-                  "flex gap-3",
-                  msg.role === 'user' ? "flex-row-reverse" : "flex-row"
-                )}
-              >
-                <div className={cn(
-                  "w-10 h-10 rounded-full flex items-center justify-center border-2 border-black shrink-0 manga-panel relative",
-                  msg.role === 'user' ? "bg-blue-200" : "bg-yellow-200"
-                )}>
-                  {msg.role === 'user' ? <User size={20} /> : <Bot size={20} />}
-                  {msg.role === 'assistant' && idx === messages.length - 1 && (
-                    <div className="absolute -top-1 -right-1 bg-white border-2 border-black rounded-full w-5 h-5 flex items-center justify-center text-[10px]">
-                      {getMoodEmoji()}
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <div className={cn(
-                    "p-4 manga-panel border-2 border-black relative text-sm",
-                    msg.role === 'user' ? "bg-blue-50" : "bg-white"
-                  )}>
-                    <div className="prose prose-sm max-w-none 
-                      prose-headings:font-black prose-headings:italic prose-headings:uppercase
-                      prose-pre:bg-zinc-900 prose-pre:text-zinc-100 prose-pre:border-2 prose-pre:border-black prose-pre:p-2
-                      prose-code:text-pink-600 prose-code:bg-pink-50 prose-code:px-1 prose-code:rounded
-                      prose-strong:text-black prose-strong:font-black">
-                      <ReactMarkdown>{msg.content}</ReactMarkdown>
-                    </div>
-                    {msg.diagram && <SketchCanvas data={msg.diagram} />}
+        {/* LEFT SIDEBAR: Problem List */}
+        <Panel defaultSize={20} minSize={15} className="bg-white flex flex-col z-10 hidden md:flex">
+          <div className="p-4 border-b-4 border-black bg-yellow-50 flex items-center gap-2">
+            <BookOpen size={24} />
+            <h2 className="text-xl font-black uppercase italic tracking-tighter">Scrolls</h2>
+          </div>
+          <div className="flex-1 overflow-y-auto p-2 space-y-4">
+            {DSA_PATTERNS.map((pattern, i) => (
+              <div key={i} className="space-y-1">
+                <div className="text-[10px] font-black uppercase bg-zinc-100 p-1 border-2 border-black">{pattern.category}</div>
+                {pattern.problems.map((prob, j) => (
+                  <div 
+                    key={j} 
+                    onClick={() => handleProblemSelect(prob)}
+                    className={cn(
+                      "p-2 border-2 border-black manga-panel cursor-pointer flex items-center gap-2 ml-2 text-xs transition-colors",
+                      selectedProblem === prob ? "bg-yellow-200" : "hover:bg-zinc-50 bg-white"
+                    )}
+                  >
+                    <span className="font-bold truncate">{prob}</span>
                   </div>
-                </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-          {isLoading && (
-            <div className="flex gap-3 items-center">
-              <div className="w-10 h-10 rounded-full bg-zinc-200 border-2 border-black animate-bounce" />
-              <div className="p-3 bg-white border-2 border-black rounded-lg italic font-mono text-xs">
-                Sensei is analyzing...
+                ))}
               </div>
-            </div>
-          )}
-        </div>
+            ))}
+          </div>
+        </Panel>
 
-        <div className="p-4 border-t-4 border-black bg-zinc-50">
-          <div className="relative flex items-end gap-2">
-            <textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSend();
+        <PanelResizeHandle className="w-3 bg-zinc-200 hover:bg-yellow-400 transition-colors cursor-col-resize border-x-4 border-black z-20 flex items-center justify-center">
+          <GripVertical size={16} className="text-zinc-500" />
+        </PanelResizeHandle>
+
+        {/* CENTER: Code Editor */}
+        <Panel defaultSize={50} minSize={30} className="flex flex-col min-w-0 bg-zinc-50 relative">
+          <header className="h-14 border-b-4 border-black bg-white flex items-center justify-between px-4 shrink-0">
+            <div className="flex items-center gap-2">
+              <Code2 size={20} />
+              <div className="font-black italic text-lg truncate">{selectedProblem}</div>
+            </div>
+            <div className="flex items-center gap-2">
+              <select 
+                value={language} 
+                onChange={(e) => setLanguage(e.target.value)}
+                className="border-2 border-black rounded px-2 py-1 text-xs font-bold uppercase bg-zinc-100 outline-none cursor-pointer hover:bg-zinc-200"
+              >
+                <option value="javascript">JavaScript</option>
+                <option value="python">Python</option>
+                <option value="java">Java</option>
+                <option value="cpp">C++</option>
+              </select>
+            </div>
+          </header>
+          <div className="flex-1 relative flex overflow-hidden bg-white">
+            <Editor
+              height="100%"
+              language={language}
+              value={currentCode}
+              onChange={(value) => handleCodeChange(value || '')}
+              theme="light"
+              options={{
+                minimap: { enabled: false },
+                fontSize: 14,
+                fontFamily: 'var(--font-mono)',
+                lineHeight: 24,
+                padding: { top: 16, bottom: 16 },
+                scrollBeyondLastLine: false,
+                smoothScrolling: true,
+                cursorBlinking: "smooth",
+                cursorSmoothCaretAnimation: "on",
+                formatOnPaste: true,
+                overviewRulerLanes: 0,
+                hideCursorInOverviewRuler: true,
+                scrollbar: {
+                  vertical: 'hidden',
+                  horizontal: 'hidden'
                 }
               }}
-              placeholder="Ask Sensei..."
-              className="flex-1 p-3 border-2 border-black rounded-lg bg-white focus:outline-none text-sm font-medium placeholder:italic manga-panel min-h-[60px] max-h-[150px] resize-none"
+              className="font-mono"
             />
-            <button
-              onClick={() => handleSend()}
-              disabled={isLoading || !input.trim()}
-              className="p-3 bg-black text-white rounded-lg hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:scale-100 manga-panel shrink-0"
-            >
-              <Send size={20} />
+          </div>
+        </Panel>
+
+        <PanelResizeHandle className="w-3 bg-zinc-200 hover:bg-yellow-400 transition-colors cursor-col-resize border-x-4 border-black z-20 flex items-center justify-center">
+          <GripVertical size={16} className="text-zinc-500" />
+        </PanelResizeHandle>
+
+        {/* RIGHT SIDEBAR: Sensei Chat */}
+        <Panel defaultSize={30} minSize={20} className="bg-white flex flex-col z-10">
+          <div className="p-4 border-b-4 border-black bg-blue-50 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Bot size={24} />
+              <h2 className="text-xl font-black uppercase italic tracking-tighter flex items-center gap-2">
+                Sensei <span className="text-sm font-mono font-normal tracking-normal">{getAsciiFace()}</span>
+              </h2>
+            </div>
+            <button onClick={clearChat} className="p-1 hover:bg-blue-100 rounded-full transition-colors border-2 border-transparent hover:border-black" title="Clear Chat">
+              <Trash2 size={16} />
             </button>
           </div>
-          <button 
-            onClick={() => {
-              setInput("Sensei, please review my code and give me a hint.");
-              setTimeout(() => handleSend("Sensei, please review my code and give me a hint."), 50);
-            }}
-            disabled={isLoading}
-            className="w-full mt-3 py-2 border-2 border-black rounded bg-yellow-100 hover:bg-yellow-200 font-black text-xs uppercase transition-colors flex items-center justify-center gap-2 manga-panel disabled:opacity-50"
-          >
-            <MessageSquare size={14} /> Review My Code
-          </button>
-        </div>
-      </aside>
+          
+          <div className="flex-1 overflow-y-auto p-4 space-y-6" ref={scrollRef}>
+            <AnimatePresence initial={false}>
+              {messages.map((msg, idx) => (
+                <motion.div
+                  key={idx}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={cn(
+                    "flex gap-3",
+                    msg.role === 'user' ? "flex-row-reverse" : "flex-row"
+                  )}
+                >
+                  <div className={cn(
+                    "w-10 h-10 rounded-full flex items-center justify-center border-2 border-black shrink-0 manga-panel relative",
+                    msg.role === 'user' ? "bg-blue-200" : "bg-yellow-200"
+                  )}>
+                    {msg.role === 'user' ? <User size={20} /> : <span className="font-mono text-xs font-bold">{getAsciiFace().slice(1, -1)}</span>}
+                    {msg.role === 'assistant' && idx === messages.length - 1 && (
+                      <div className="absolute -top-1 -right-1 bg-white border-2 border-black rounded-full w-5 h-5 flex items-center justify-center text-[10px]">
+                        {getMoodEmoji()}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <div className={cn(
+                      "p-4 manga-panel border-2 border-black relative text-sm",
+                      msg.role === 'user' ? "bg-blue-50" : "bg-white"
+                    )}>
+                      <div className="prose prose-sm max-w-none 
+                        prose-headings:font-black prose-headings:italic prose-headings:uppercase
+                        prose-pre:bg-zinc-900 prose-pre:text-zinc-100 prose-pre:border-2 prose-pre:border-black prose-pre:p-2
+                        prose-code:text-pink-600 prose-code:bg-pink-50 prose-code:px-1 prose-code:rounded
+                        prose-strong:text-black prose-strong:font-black">
+                        <ReactMarkdown>{msg.content}</ReactMarkdown>
+                      </div>
+                      {msg.diagram && <SketchCanvas data={msg.diagram} />}
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+            {isLoading && (
+              <div className="flex gap-3 items-center">
+                <div className="w-10 h-10 rounded-full bg-zinc-200 border-2 border-black animate-bounce flex items-center justify-center font-mono text-xs font-bold">
+                  {getAsciiFace().slice(1, -1)}
+                </div>
+                <div className="p-3 bg-white border-2 border-black rounded-lg italic font-mono text-xs">
+                  Sensei is analyzing...
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="p-4 border-t-4 border-black bg-zinc-50">
+            <div className="relative flex items-end gap-2">
+              <textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend();
+                  }
+                }}
+                placeholder="Ask Sensei..."
+                className="flex-1 p-3 border-2 border-black rounded-lg bg-white focus:outline-none text-sm font-medium placeholder:italic manga-panel min-h-[60px] max-h-[150px] resize-none"
+              />
+              <button
+                onClick={() => handleSend()}
+                disabled={isLoading || !input.trim()}
+                className="p-3 bg-black text-white rounded-lg hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:scale-100 manga-panel shrink-0"
+              >
+                <Send size={20} />
+              </button>
+            </div>
+            <button 
+              onClick={() => {
+                setInput("Sensei, please review my code and give me a hint.");
+                setTimeout(() => handleSend("Sensei, please review my code and give me a hint."), 50);
+              }}
+              disabled={isLoading}
+              className="w-full mt-3 py-2 border-2 border-black rounded bg-yellow-100 hover:bg-yellow-200 font-black text-xs uppercase transition-colors flex items-center justify-center gap-2 manga-panel disabled:opacity-50"
+            >
+              <MessageSquare size={14} /> Review My Code
+            </button>
+          </div>
+        </Panel>
+      </PanelGroup>
 
       {/* Global Overlay for Manga Style */}
       <div className="fixed inset-0 pointer-events-none border-[12px] border-black z-50 mix-blend-multiply opacity-10" />
