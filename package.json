@@ -10,11 +10,16 @@
     "clean": "next clean"
   },
   "dependencies": {
+    "@ai-sdk/mistral": "^3.0.28",
     "@ai-sdk/openai": "^3.0.50",
     "@ai-sdk/react": "^3.0.148",
     "@google/genai": "^1.17.0",
     "@hookform/resolvers": "^5.2.1",
     "@monaco-editor/react": "^4.7.0",
+    "@remotion/google-fonts": "^4.0.445",
+    "@remotion/player": "^4.0.445",
+    "@supabase/ssr": "^0.10.0",
+    "@supabase/supabase-js": "^2.101.1",
     "@tldraw/tldraw": "^4.5.7",
     "ai": "^6.0.146",
     "autoprefixer": "^10.4.21",
@@ -28,6 +33,7 @@
     "react-dom": "^19.2.1",
     "react-markdown": "^10.1.0",
     "react-resizable-panels": "^4.9.0",
+    "remotion": "^4.0.445",
     "roughjs": "^4.6.6",
     "tailwind-merge": "^3.5.0",
     "tldraw": "^4.5.7"
